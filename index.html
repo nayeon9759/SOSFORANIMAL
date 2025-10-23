@@ -237,16 +237,16 @@ select,textarea,input[type="text"]{
      </div>
     </div>
 
-        <div class="form-card">
-     <label class="q">2. 당신이 사는 지역은 어디인가요?</label>
-     <div class="options">
-      <label><input type="radio" name="region" value="서울"> 서울</label>
-      <label><input type="radio" name="region" value="경기도"> 경기도</label>
-      <label><input type="radio" name="region" value="경상도"> 경상도</label>
-      <label><input type="radio" name="region" value="기타"> 기타</label>
-      <input type="text" name="regionOther" placeholder="직접 입력" style="display:none;">
-     </div>
-    </div>
+      <div class="form-card">
+     <label class="q">2. 당신이 사는 지역은 어디인가요? <span class="required">*</span></label>  
+     <div class="options">
+            <label><input type="radio" name="region" value="서울" required> 서울</label> 
+      <label><input type="radio" name="region" value="경기도"> 경기도</label>
+      <label><input type="radio" name="region" value="경상도"> 경상도</label>
+      <label><input type="radio" name="region" value="기타"> 기타</label>
+      <input type="text" name="regionOther" placeholder="직접 입력" style="display:none;">
+     </div>
+    </div>
 
         <div class="form-card">
      <label class="q">3. 평소 동물병원 선택 시 가장 우선시하는 기준은 무엇인가요? <span class="required">*</span></label>
@@ -513,4 +513,5 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 </body>
 </html>
+
 
