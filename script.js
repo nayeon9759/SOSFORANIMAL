@@ -9,26 +9,27 @@ document.addEventListener("DOMContentLoaded", () => {
  const tabBtns = document.querySelectorAll(".tab-btn");
 
  let localSubmissions = []; // 서버에서 불러온 전체 데이터
+ let isSubmitting = false; // 💡 제출 잠금 플래그 추가
 
- // ⭐️ 1. 핵심 수정: Sheets의 실제 열 이름 (Mood, Content, Reaction)을 Key로 사용 ⭐️
- // Sheets에서 이 이름으로 데이터를 읽어옵니다.
+ // ⭐️ 1. 시트 컬럼 이름과 출력 라벨 정의 (라벨을 질문 내용에 맞게 명확히 수정)
  const keyMap = {
   hasPet: "반려동물 보유",
   region: "지역",
   regionOther: "직접 입력 지역",
-  Mood: "병원 선택 기준",      // Sheets 열 (폼: priorityCriteria)
-  Content: "최대 지불 의향",    // Sheets 열 (폼: concernAndFeature)
-  Reaction: "불만/필요 기능",   // Sheets 열 (폼: priceRange)
+  Mood: "병원 선택 기준",      // Q3 (priorityCriteria)
+  Content: "우려/필요 기능",    // Q4 (concernAndFeature)
+  Reaction: "최대 지불 의향",   // Q6 (priceRange)
   priority1: "1순위 정보",
   priority2: "2순위 정보",
  };
 
- // ⭐️ 2. 표시할 3개 핵심 항목을 Sheets의 열 이름으로 정의 ⭐️
- const displayKeys = ["Mood", "Reaction"];
+ // ⭐️ 2. 표시할 핵심 항목 (주관식 응답인 Content를 포함하여 데이터 활용도를 높입니다)
+ const displayKeys = ["Mood", "Reaction", "Content"]; // 💡 Q4(Content) 추가
 
  /**
  * 1. 서버에서 최신 데이터를 가져와 localSubmissions를 갱신하고, 화면을 다시 그리는 핵심 함수
  */
+ // ... (fetchSubmissions 함수 내용은 기존과 동일) ...
  const fetchSubmissions = async () => {
   try {
    const uniqueApiUrl = `${API_URL}?t=${new Date().getTime()}`;
@@ -55,6 +56,18 @@ document.addEventListener("DOMContentLoaded", () => {
  // 2. 폼 제출 (POST 후, 전체 데이터 재요청 로직 포함)
  form.addEventListener("submit", async (e) => {
   e.preventDefault();
+
+  const submitBtn = form.querySelector('button[type="submit"]'); // 버튼 찾기
+
+  if (isSubmitting) { // 💡 중복 제출 방지 체크
+    msg.textContent = "⚠️ 이미 제출 중입니다. 잠시만 기다려 주세요.";
+    return;
+  }
+  
+  // 💡 제출 시작 시 잠금 및 버튼 비활성화
+  isSubmitting = true; 
+  submitBtn.disabled = true; 
+  submitBtn.textContent = "제출 중...";
   msg.textContent = "✅ 제출 중...";
 
   const data = new FormData(form);
@@ -83,10 +96,15 @@ document.addEventListener("DOMContentLoaded", () => {
    msg.textContent = "⚠️ 서버 응답 오류 발생. 데이터 갱신을 시도합니다.";
    await fetchSubmissions();
    document.querySelector('.tab-btn[data-target="submissions"]').click();
+  } finally {
+    // 💡 성공/실패와 관계없이 잠금 해제 및 버튼 활성화
+    isSubmitting = false; 
+    submitBtn.disabled = false; 
+    submitBtn.textContent = "제출하기"; 
   }
  });
 
- // 3. submissions 렌더링
+ // 3. submissions 렌더링 (displayKeys 수정 사항 적용)
  const renderSubmissions = () => {
   submissionsList.innerHTML = "";
  
@@ -101,19 +119,14 @@ document.addEventListener("DOMContentLoaded", () => {
    card.className = "record fade-in";
    card.style.setProperty('--delay', `${index * 0.05}s`);
 
-   // ⭐️ displayKeys(Mood, Content, Reaction)만 순회하며 렌더링
+   // ⭐️ displayKeys(Mood, Reaction, Content)만 순회하며 렌더링
    let html = displayKeys
      .map(k => {
-       // keyMap에서 Sheets 열 이름(k)에 맞는 레이블을 가져옵니다.
        const label = keyMap[k];
-       let value = sub[k]; // Sheets에서 읽어온 값
+       let value = sub[k];
       
-       // ⭐️ 레거시 맵을 제거했습니다. GAS에서 데이터가 올바르게 기록되므로 필요 없습니다. ⭐️
-      
-       // 최종 값이 없거나 빈 문자열이면 "응답 없음"을 표시
        const displayValue = (value && value !== "" && value !== " ") ? value : "응답 없음";
       
-       // 스타일링 코드 유지
        return `<div class="record-item">
          <strong>${label}:</strong>
          <span class="${displayValue === '응답 없음' ? 'text-muted' : 'text-accent'}">${displayValue}</span>
@@ -136,7 +149,6 @@ document.addEventListener("DOMContentLoaded", () => {
    btn.classList.add("active");
    document.getElementById(btn.dataset.target).classList.add("active");
 
-   // submissions 탭이 활성화될 때만 fetchSubmissions 호출
    if (btn.dataset.target === "submissions") {
     fetchSubmissions();
    }
@@ -155,4 +167,7 @@ document.addEventListener("DOMContentLoaded", () => {
    }
   });
  });
+ 
+ // 초기 데이터 로드 (submissions 탭이 활성화된 상태가 아닐 수 있으므로 탭 전환 시에만 호출)
+ // fetchSubmissions(); // 초기 자동 호출 제거
 });
